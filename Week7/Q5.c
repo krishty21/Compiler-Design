@@ -3,161 +3,93 @@
 #include <string.h>
 #include <ctype.h>
 
-#define MAX 100
-
-char stk[MAX][20];
+char stk[100][20];
 int top = -1;
-int line = 1;
 
-void push(char *s) {
-    top++;
-    strcpy(stk[top], s);
-}
-
-void pop(int n) {
-    top = top - n;
-}
-void check() {
-    if(top >= 0) {
-        if(strcmp(stk[top], "int") == 0 || strcmp(stk[top], "float") == 0) {
-            strcpy(stk[top], "T");
+void reduce()
+{
+    if (top >= 0 && (strcmp(stk[top], "int") == 0 || strcmp(stk[top], "float") == 0))
+    {
+        strcpy(stk[top], "T");
+        reduce();
+    }
+    else if (top >= 0 && (strcmp(stk[top], "id") == 0 || strcmp(stk[top], "num") == 0))
+    {
+        if (top > 0 && (strcmp(stk[top - 1], "int") == 0 || strcmp(stk[top - 1], "float") == 0))
             return;
-        }
+        strcpy(stk[top], "T");
+        reduce();
     }
-
-    if(top >= 0) {
-        if(strcmp(stk[top], "num") == 0) {
-            strcpy(stk[top], "T");
-            check(); 
-            return;
+    else if (top >= 0 && strcmp(stk[top], "T") == 0)
+    {
+        if (top >= 2 && strcmp(stk[top - 1], "+") == 0 && strcmp(stk[top - 2], "E") == 0)
+        {
+            top -= 2;
         }
-    }
-
-    if(top >= 2) {
-        if(strcmp(stk[top], ";") == 0 && strcmp(stk[top-1], "id") == 0 && strcmp(stk[top-2], "T") == 0) {
-            pop(3);
-            push("D");
-            check(); return;
-        }
-    }
-
-    if(top >= 2) {
-        if((strcmp(stk[top], "T") == 0 || strcmp(stk[top], "E") == 0) && 
-           strcmp(stk[top-1], "+") == 0 && 
-           strcmp(stk[top-2], "E") == 0) {
-            pop(3);
-            push("E");
-            check(); return;
-        }
-    }
-    
-    if(top >= 0 && strcmp(stk[top], "T") == 0) {
-        if(top == 0 || strcmp(stk[top-1], "+") == 0 || strcmp(stk[top-1], "=") == 0 || strcmp(stk[top-1], "(") == 0 || strcmp(stk[top-1], ">") == 0) {
+        else
+        {
             strcpy(stk[top], "E");
-            check(); return;
         }
+        reduce();
     }
-
-    if(top >= 3) {
-        if(strcmp(stk[top], ";") == 0 && strcmp(stk[top-1], "E") == 0 && 
-           strcmp(stk[top-2], "=") == 0 && strcmp(stk[top-3], "id") == 0) {
-            pop(4);
-            push("S");
-            check(); return;
+    else if (top >= 2 && strcmp(stk[top], ";") == 0 && strcmp(stk[top - 1], "id") == 0 && strcmp(stk[top - 2], "T") == 0)
+    {
+        top -= 2;
+        strcpy(stk[top], "D");
+        reduce();
+    }
+    else if (top >= 3 && strcmp(stk[top], ";") == 0 && strcmp(stk[top - 1], "E") == 0 && strcmp(stk[top - 2], "=") == 0 && strcmp(stk[top - 3], "id") == 0)
+    {
+        top -= 3;
+        strcpy(stk[top], "S");
+        reduce();
+    }
+    else if (top >= 0 && (strcmp(stk[top], ">") == 0 || strcmp(stk[top], "<") == 0 || strcmp(stk[top], "==") == 0))
+    {
+        strcpy(stk[top], "R");
+        reduce();
+    }
+    else if (top >= 8 && strcmp(stk[top], "}") == 0 && strcmp(stk[top - 1], "S") == 0 && strcmp(stk[top - 2], "{") == 0 && strcmp(stk[top - 3], ")") == 0 && strcmp(stk[top - 4], "E") == 0 && strcmp(stk[top - 5], "R") == 0 && strcmp(stk[top - 6], "E") == 0 && strcmp(stk[top - 7], "(") == 0 && strcmp(stk[top - 8], "if") == 0)
+    {
+        top -= 8;
+        strcpy(stk[top], "S");
+        reduce();
+    }
+    else if (top >= 1)
+    {
+        if ((strcmp(stk[top], "D") == 0 && strcmp(stk[top - 1], "D") == 0) || (strcmp(stk[top], "S") == 0 && strcmp(stk[top - 1], "S") == 0))
+        {
+            top--;
+            reduce();
         }
-    }
-
-    if(top >= 8) {
-        if(strcmp(stk[top], "}") == 0 && strcmp(stk[top-1], "S") == 0 && strcmp(stk[top-2], "{") == 0 &&
-           strcmp(stk[top-3], ")") == 0 && strcmp(stk[top-4], "E") == 0 && 
-           (strcmp(stk[top-5], ">") == 0 || strcmp(stk[top-5], "<") == 0 || strcmp(stk[top-5], "==") == 0) &&
-           strcmp(stk[top-6], "E") == 0 && strcmp(stk[top-7], "(") == 0 && strcmp(stk[top-8], "if") == 0) {
-               pop(9);
-               push("S");
-               check(); return;
-           }
-    }
-    if(top >= 1) {
-        if(strcmp(stk[top], "S") == 0 && strcmp(stk[top-1], "S") == 0) {
-            pop(1);
-            check(); return;
-        }
-    }
-
-    if(top >= 1) {
-        if(strcmp(stk[top], "D") == 0 && strcmp(stk[top-1], "D") == 0) {
-            pop(1);
-            check(); return;
+        else if (strcmp(stk[top], "S") == 0 && strcmp(stk[top - 1], "D") == 0)
+        {
+            top--;
+            strcpy(stk[top], "P");
+            reduce();
         }
     }
 }
 
-int main() {
-    printf("Enter code (end with $):\n");
-    char token[20];
-    char ch;
-    int k = 0;
-    while(1) {
-        ch = getchar();
-        if (ch == '$' || ch == EOF) break;
-        if (isspace(ch)) {
-            if (ch == '\n') line++;
-            continue;
-        }
-        if (isdigit(ch)) {
-            k = 0;
-            token[k++] = ch;
-            while(isdigit(ch = getchar())) {
-                token[k++] = ch;
-            }
-            token[k] = '\0';
-            ungetc(ch, stdin);
-            push("num");
-            check();
-        }
-        else if (isalpha(ch)) {
-            k = 0;
-            token[k++] = ch;
-            while(isalnum(ch = getchar())) {
-                token[k++] = ch;
-            }
-            token[k] = '\0';
-            ungetc(ch, stdin);
-
-            if(strcmp(token, "int")==0 || strcmp(token, "float")==0 || strcmp(token, "if")==0) {
-                push(token);
-            } else {
-                push("id");
-            }
-            check();
-        }
-        else {
-            token[0] = ch;
-            token[1] = '\0';
-            
-            if(ch == '=') {
-                char next = getchar();
-                if(next == '=') {
-                    strcpy(token, "==");
-                } else {
-                    ungetc(next, stdin);
-                }
-            }
-            push(token);
-            check();
-        }
+int main()
+{
+    char input[20];
+    printf("Enter tokens with spaces (end with $):\n");
+    while (scanf("%s", input) && strcmp(input, "$") != 0)
+    {
+        if (isdigit(input[0]))
+            strcpy(stk[++top], "num");
+        else if (strcmp(input, "int") == 0 || strcmp(input, "float") == 0 || strcmp(input, "if") == 0)
+            strcpy(stk[++top], input);
+        else if (isalpha(input[0]))
+            strcpy(stk[++top], "id");
+        else
+            strcpy(stk[++top], input);
+        reduce();
     }
-
-    int valid = 0;
-    if(top == 1 && strcmp(stk[0], "D") == 0 && strcmp(stk[1], "S") == 0) valid = 1;
-    if(top == 0 && strcmp(stk[0], "D") == 0) valid = 1;
-    if(top == 0 && strcmp(stk[0], "S") == 0) valid = 1;
-
-    if(valid)
+    if (top == 0 && (strcmp(stk[0], "P") == 0 || strcmp(stk[0], "D") == 0 || strcmp(stk[0], "S") == 0))
         printf("\nStatus: ACCEPT\n");
-    else {
-        printf("\nStatus: SYNTAX ERROR\n");
-        printf("Error around Line %d\n", line);
-    }
+    else
+        printf("\nStatus: SYNTAX ERROR BRO\n");
     return 0;
 }
